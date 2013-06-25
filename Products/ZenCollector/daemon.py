@@ -28,7 +28,7 @@ from Products.ZenCollector.interfaces import ICollector,\
                                              IStatisticsService
 from Products.ZenCollector.utils.maintenance import MaintenanceCycle
 from Products.ZenHub.PBDaemon import PBDaemon, FakeRemote
-from Products.ZenPublisher.publisher import ZenPublisher
+from zenoss.collector.publisher import publisher
 from Products.ZenRRD.RRDDaemon import RRDDaemon
 from Products.ZenRRD import RRDUtil
 from Products.ZenRRD.Thresholds import Thresholds
@@ -617,7 +617,7 @@ class CollectorDaemon(RRDDaemon):
                 log.exception("Unable to import class %s", c)
 
     def _configureRRD(self, rrdCreateCommand, thresholds):
-        self._publisher = ZenPublisher.ZenPublisher()
+        self._publisher = publisher.RedisListPublisher
         self._rrd = RRDUtil.RRDUtil(rrdCreateCommand, self.preferences.cycleInterval)
         self.rrdStats.config(self.options.monitor,
                              self.name,
