@@ -11,6 +11,7 @@
 import signal
 import time
 import logging
+import os
 
 import zope.interface
 
@@ -214,6 +215,7 @@ class CollectorDaemon(RRDDaemon):
         self._thresholds = Thresholds()
         self._unresponsiveDevices = set()
         self._publisher = None
+        self._metricsChannel = publisher.defaultMetricsChannel
         self._rrd = None
         self.reconfigureTimeout = None
 
@@ -329,14 +331,14 @@ class CollectorDaemon(RRDDaemon):
                 eventCopy['device_guid'] = guid
         return eventCopy
 
-    def writeMetric(self, metric, value, timestamp):
-        self._publisher.put(metric, value, timestamp)
+    def writeMetric(self, metric, value, timestamp, uuid):
+        self._publisher.put(self._metricsChannel, metric, value, timestamp, uuid)
 
     def writeRRD(self, path, value, rrdType, rrdCommand=None, cycleTime=None,
                  min='U', max='U', threshEventData={}, timestamp='N', allowStaleDatapoint=True):
         now = time.time()
 
-        self.writeMetric(os.path.basepath(path), value, now)
+        self.writeMetric(os.path.basename(path), value, now, os.path.dirname(path))
 
         # hasThresholds = bool(self._thresholds.byFilename.get(path))
         # if hasThresholds:
@@ -617,7 +619,7 @@ class CollectorDaemon(RRDDaemon):
                 log.exception("Unable to import class %s", c)
 
     def _configureRRD(self, rrdCreateCommand, thresholds):
-        self._publisher = publisher.RedisListPublisher
+        self._publisher = publisher.RedisListPublisher()
         self._rrd = RRDUtil.RRDUtil(rrdCreateCommand, self.preferences.cycleInterval)
         self.rrdStats.config(self.options.monitor,
                              self.name,
